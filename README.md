@@ -17,6 +17,10 @@ Displays:
 
 Like this.
 
+![](https://i.imgur.com/ZjpjNfw.gif)
+
+Or this.
+
 ![](https://i.imgur.com/6fhraaj.gif)
 
 And this (data is updated once per second).
