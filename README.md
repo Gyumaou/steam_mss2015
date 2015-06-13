@@ -30,3 +30,9 @@ It's nice to have information available at a glance.
 # More features?
 
 Soon™
+
+# Can I use it with other scripts?
+
+Yes.
+
+If they modify the same element on-load: load them first, then this one.
