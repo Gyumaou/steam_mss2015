@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name           Steam - Monster Summer Sale 2015: Minigame Manager
 // @author         github.com/kton - reddit.com/user/o9k1/
-// @version        0.0.1
+// @version        0.0.2
 // @match          http://steamcommunity.com/minigame/towerattack/
 // @description    extends the game UI and does things
 // @run-at         document-end
@@ -19,30 +19,85 @@
   }
 
   var info = {
-    version: '0.0.1',
-    pane: document.querySelector('.leave_game_helper'),
+    version: '0.0.2',
+    bar: document.querySelector('.breadcrumbs'),
+    manager: document.createElement('span'), // "the button"
+    pane: document.createElement('span'),
     init: function (_pane) {
+      // apply manager (breadcrumb text) styles
+      info.manager.style.color = 'white';
+      info.manager.style.cssFloat = 'right';
+      info.manager.style.padding = '2px 4px';
+      info.manager.style.border = '1px solid white';
+
       var _info = document.createElement('span');
       var _wait = ~~(config.wait.loadgame/1000+config.wait.loaddata/1000);
       _info.innerHTML = 'Minigame Manager v' + info.version + ' loading in ~' + _wait + 's ...';
 
-      _pane.innerHTML = '';
-      _pane.appendChild(_info);
+      info.bar.appendChild(info.manager); // manager -> breadcrumbs
+      info.manager.appendChild(_pane); // info pane -> manager
+      _pane.appendChild(_info); // info -> info pane
 
       setTimeout(
         function(){
           data.init(info.pane);
-          _info.parentNode.removeChild(_info);
-          info.expand(info.pane);
+          _info.parentNode.removeChild(_info); // removes loading text
+          info.controls.init(info.controls.buttons,info.manager); // insert controls
+          info.decorate(info.pane);
         }
       ,config.wait.loadgame);
     },
-    expand: function (_pane) {
-      _pane.style.right = '0px';
-      _pane.style.top = '15px';
-      _pane.style.width = '1000px';
+    decorate: function (_pane) {
+      // info pane (the popup with data)
+      _pane.style.color = 'white';
+      _pane.style.fontSize = '8pt';
+      _pane.style.left = '0px';
+      _pane.style.top = '130px';
+      _pane.style.width = '950px';
       _pane.style.textAlign = 'center';
       _pane.style.zIndex = '9999';
+      _pane.style.position = 'fixed';
+      _pane.style.background = 'rgba(0,0,0,.8)';
+      _pane.style.cursor = 'move';
+    },
+    controls: {
+      buttons: {
+        player: document.createElement('span'),
+        lane: document.createElement('span'),
+        toggle: document.createElement('span')
+      },
+      init: function (_buttons,_manager) {
+        _buttons.player.innerHTML = 'Player Data';
+        _buttons.lane.innerHTML = 'Lane Data';
+        _buttons.toggle.innerHTML = 'Hide';
+
+        for (_button in _buttons)
+          _buttons[_button].style.cursor = 'pointer';
+          // console.log(_button);
+
+        // event listeners
+        _buttons.toggle.addEventListener('click', function (e) {
+          if (e.which != 1) return;
+
+          e.preventDefault();
+
+          if (this.innerHTML === 'Hide') {
+            info.pane.style.visibility = 'hidden';
+            this.innerHTML = 'Show';
+          } else {
+            info.pane.style.visibility = 'visible';
+            this.innerHTML = 'Hide';
+          }
+        });
+
+        // inject into DOM
+        // SOON(TM)
+          // _manager.appendChild(_buttons.player);
+          // ui.text.add(' | ',_manager);
+          // _manager.appendChild(_buttons.lane);
+          // ui.text.add(' | ',_manager);
+        _manager.appendChild(_buttons.toggle);
+      }
     },
     abilities: { // via https://github.com/wchill/steamSummerMinigame/blob/master/Abilities%20And%20Upgrades%20list.md
       1: 'Fire Weapon',
@@ -161,7 +216,7 @@
     update: function(_state) {
       var _data = document.querySelector('#mgr_gamedata').value;
 
-      if (!_data.length || _data === 'undefined')
+      if (!_data.length || _data === 'undefined') // 'undefined' =game is probably stuck on Loading 97/97
         return; // sanity check
       else
         _data = JSON.parse(_data);
@@ -253,6 +308,7 @@
     ],
     init: function (_pane) {
       _pane.appendChild(ui.pane);
+      ui.helper.makedraggable(info.pane);
     },
     generate: function (_data, _state) {
       _data = []; // blank slate
@@ -365,6 +421,52 @@
           return '' + _x[0] + _spacing;
         }
 
+      },
+      add: function (_text,_node) {
+        _node.appendChild(document.createTextNode(_text));
+      }
+    },
+    helper: {
+      makedraggable: function(_target) {
+        // via https://stackoverflow.com/questions/20154472/dragging-elements-without-jquery
+        function startDrag(evt) { // slightly modified
+          evt.preventDefault();
+
+          var diffX = evt.clientX - this.offsetLeft,
+              diffY = evt.clientY - this.offsetTop,
+              that = this;
+
+          function moveAlong(evt) {
+              evt.preventDefault();
+              var left = parseInt(evt.clientX - diffX);
+              var top = parseInt(evt.clientY - diffY);
+
+              // check for screen boundaries
+              if (top < 0) { top = 0; }
+              if (left < 0) { left = 0; }
+              if (top > window.innerHeight-1) 
+                  { top = window.innerHeight-1; }
+              if (left > window.innerWidth-1) 
+                  { left = window.innerWidth-1; }
+
+              // set new position
+              that.style.left = left + 'px';
+              that.style.top = top + 'px';
+          }
+
+          // stopDrag removes event listeners from the element,
+          // thus stopping the drag:
+          function stopDrag() {
+              document.removeEventListener('mousemove', moveAlong);
+              document.removeEventListener('mouseup', stopDrag);
+          }
+
+          document.addEventListener('mouseup', stopDrag);
+          document.addEventListener('mousemove', moveAlong);
+          return false;
+        }
+
+        _target.addEventListener('mousedown',startDrag);
       }
     }
   };
